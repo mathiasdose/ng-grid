@@ -37,7 +37,7 @@
 
       <!-- <div class="row main"> -->
         <h2>Grid</h2>
-        <div ui-grid="gridOptions" class="grid" ui-grid-selection></div>
+        <div ui-grid="gridOptions" class="grid" ui-grid-pinning></div>
         <!-- <div class="placeholder"> -->
       <!-- </div> -->
 
@@ -46,20 +46,20 @@
 
       <script>
 
-      var app = angular.module('test', ['ui.grid', 'ui.grid.selection', 'ui.grid.expandable']);
+      var app = angular.module('test', ['ui.grid', 'ui.grid.pinning']);
 
       app.controller('Main', function($scope, $http) {
-          // $scope.gridOptions = { data: 'data' };
           $scope.gridOptions = {
-            enableFiltering: true
+            columnDefs : [
+              {
+                field: "name"
+              },
+              {
+                field: "company",
+                pinnedLeft: true
+              }
+            ]
           };
-          $scope.gridOptions.columnDefs = [
-            {
-              name : "Name",
-              field: "name",
-              cellTemplate: '/misc/demo/cellTemplate.html'
-            }
-          ];
 
           $http.get('/misc/site/data/100.json')
             .success(function (data) {
