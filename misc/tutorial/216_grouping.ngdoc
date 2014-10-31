@@ -1,0 +1,49 @@
+@ngdoc overview
+@name Tutorial: 216 Grouping
+@description
+
+The grouping feature allows the user to group a column values. To enable, you must include the 'ui.grid.grouping' module and you must include the ui-grid-grouping directive on your grid element.
+
+
+@example
+<example module="app">
+  <file name="app.js">
+    var app = angular.module('app', ['ui.grid', 'ui.grid.grouping']);
+
+    app.controller('MainCtrl', ['$scope', '$http', '$log', function ($scope, $http, $log) {
+      $scope.gridOptions = {
+           
+      };
+
+      $scope.gridOptions.columnDefs = [
+        { name:'id', width:50 },
+        { name:'name', width:100 },
+        { name:'age', width:100 },
+        { name:'address.street', width:150  },
+        { name:'address.city', width:150 },
+        { name:'address.state', width:50 },
+        { name:'address.zip', width:50 },
+        { name:'company', width:100 },
+        { name:'email', width:100 },
+        { name:'phone', width:200 },
+        { name:'about', width:300 },
+      ];
+
+      $http.get('/data/500_complex.json')
+        .success(function(data) {
+          $scope.gridOptions.data = data;
+        });
+    }]);
+  </file>
+  <file name="index.html">
+    <div ng-controller="MainCtrl">
+      <div ui-grid="gridOptions" class="grid" ui-grid-grouping></div>
+    </div>
+  </file>
+  <file name="main.css">
+    .grid {
+      width: 500px;
+      height: 400px;
+    }
+  </file>
+</example>
