@@ -17,7 +17,7 @@ remembering the state of a page and scrolling back to that position when a user 
 
     app.controller('MainCtrl', ['$scope', '$http', '$log', function ($scope, $http, $log) {
       $scope.gridOptions = {};
-
+      $scope.gridOptions.modifierKeysToMultiSelectCells = true;
       $scope.gridOptions.columnDefs = [
         { name: 'id', width:'150' },
         { name: 'name', width:'200' },
@@ -45,6 +45,15 @@ remembering the state of a page and scrolling back to that position when a user 
               $scope.currentFocused = 'Row Id:' + rowCol.row.entity.id + ' col:' + rowCol.col.colDef.name;
           }
         };
+
+        $scope.getCurrentSelection = function() {
+          var values = [];
+          var currentSelection = $scope.gridApi.cellNav.getCurrentSelection();
+          for (var i = 0; i < currentSelection.length; i++) {
+            values.push(currentSelection[i].row.entity[currentSelection[i].col.name])
+          }
+          alert(JSON.stringify(values))
+        };
         
         $scope.scrollTo = function( rowIndex, colIndex ) {
           $scope.gridApi.cellNav.scrollTo( $scope.gridApi.grid, $scope, $scope.gridOptions.data[rowIndex], $scope.gridOptions.columnDefs[colIndex]); 
@@ -70,6 +79,7 @@ remembering the state of a page and scrolling back to that position when a user 
       <button type="button" class="btn btn-success" ng-click="scrollTo(0,7)">Scroll To Balance</button>
       <button type="button" class="btn btn-success" ng-click="scrollTo(50,7)">Scroll To Row 50, Balance</button>
       <button type="button" class="btn btn-success" ng-click="getCurrentFocus()">Get Current focused cell</button>  <span ng-bind="currentFocused"></span>
+      <button type="button" class="btn btn-success" ng-click="getCurrentSelection()">Get Current focused cell values</button>
       <br>
       <br>
       <div ui-grid="gridOptions" ui-grid-cellNav ui-grid-pinning class="grid"></div>

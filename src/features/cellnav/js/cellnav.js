@@ -176,6 +176,9 @@
           //create variables for state
           grid.cellNav = {};
           grid.cellNav.lastRowCol = null;
+          grid.cellNav.focusedCells = [];
+
+          service.defaultGridOptions(grid.options);
 
           /**
            *  @ngdoc object
@@ -227,6 +230,38 @@
                  */
                 getFocusedCell: function () {
                   return grid.cellNav.lastRowCol;
+                },
+
+                /**
+                 * @ngdoc function
+                 * @name getCurrentSelection
+                 * @methodOf  ui.grid.cellNav.api:PublicApi
+                 * @description returns an array containing the current selection
+                 * <br> array is empty if no selection has occurred
+                 */
+                getCurrentSelection: function () {
+                  return grid.cellNav.focusedCells;
+                },
+
+                /**
+                 * @ngdoc function
+                 * @name rowColSelectIndex
+                 * @methodOf  ui.grid.cellNav.api:PublicApi
+                 * @description returns the index in the order in which the RowCol was selected, returns -1 if the RowCol
+                 * isn't selected
+                 * @param {object} rowCol the rowCol to evaluate
+                 */
+                rowColSelectIndex: function (rowCol) {
+                  //return gridUtil.arrayContainsObjectWithProperty(grid.cellNav.focusedCells, 'col.uid', rowCol.col.uid) &&
+                  var index = -1;
+                  for (var i = 0; i < grid.cellNav.focusedCells.length; i++) {
+                    if (grid.cellNav.focusedCells[i].col.uid === rowCol.col.uid &&
+                      grid.cellNav.focusedCells[i].row.uid === rowCol.row.uid) {
+                      index = i;
+                      break;
+                    }
+                  }
+                  return index;
                 }
               }
             }
@@ -235,6 +270,27 @@
           grid.api.registerEventsFromObject(publicApi.events);
 
           grid.api.registerMethodsFromObject(publicApi.methods);
+
+        },
+
+        defaultGridOptions: function (gridOptions) {
+          /**
+           *  @ngdoc object
+           *  @name ui.grid.cellNav.api:GridOptions
+           *
+           *  @description GridOptions for cellNav feature, these are available to be
+           *  set using the ui-grid {@link ui.grid.class:GridOptions gridOptions}
+           */
+
+          /**
+           *  @ngdoc object
+           *  @name modifierKeysToMultiSelectCells
+           *  @propertyOf  ui.grid.cellNav.api:GridOptions
+           *  @description Enable multiple cell selection only when using the ctrlKey or shiftKey.
+           *  <br/>Defaults to false
+           */
+          gridOptions.modifierKeysToMultiSelectCells = gridOptions.modifierKeysToMultiSelectCells === true;
+
 
         },
 
@@ -351,20 +407,20 @@
          * @description Like scrollTo, but takes gridRow and gridCol.
          * In calculating the scroll height we have to deal with wanting
          * 0% for the first row, and 100% for the last row.  Normal maths
-         * for a 10 row list would return 1/10 = 10% for the first row, so 
+         * for a 10 row list would return 1/10 = 10% for the first row, so
          * we need to tweak the numbers to add an extra 10% somewhere.  The
          * formula if we're trying to get to row 0 in a 10 row list (assuming our
          * index is zero based, so the last row is row 9) is:
          * <pre>
          *   0 + 0 / 10 = 0%
          * </pre>
-         * 
-         * To get to row 9 (i.e. the last row) in the same list, we want to 
+         *
+         * To get to row 9 (i.e. the last row) in the same list, we want to
          * go to:
          * <pre>
          *  ( 9 + 1 ) / 10 = 100%
          * </pre>
-         * So we need to apportion one whole row within the overall grid scroll, 
+         * So we need to apportion one whole row within the overall grid scroll,
          * the formula is:
          * <pre>
          *   ( index + ( index / (total rows - 1) ) / total rows
@@ -382,11 +438,11 @@
             var seekRowIndex = grid.renderContainers.body.visibleRowCache.indexOf(gridRow);
             var totalRows = grid.renderContainers.body.visibleRowCache.length;
             var percentage = ( seekRowIndex + ( seekRowIndex / ( totalRows - 1 ) ) ) / totalRows;
-            args.y = { percentage:  percentage  };
+            args.y = { percentage: percentage  };
           }
 
           if (gridCol !== null) {
-            args.x = { percentage: this.getLeftWidth(grid, gridCol) / this.getLeftWidth(grid, grid.renderContainers.body.visibleColumnCache[grid.renderContainers.body.visibleColumnCache.length - 1] ) };
+            args.x = { percentage: this.getLeftWidth(grid, gridCol) / this.getLeftWidth(grid, grid.renderContainers.body.visibleColumnCache[grid.renderContainers.body.visibleColumnCache.length - 1]) };
           }
 
           if (args.y || args.x) {
@@ -445,7 +501,7 @@
           if (gridRow !== null) {
             // This is the index of the row we want to scroll to, within the list of rows that can be visible
             var seekRowIndex = visRowCache.indexOf(gridRow);
-            
+
             // Total vertical scroll length of the grid
             var scrollLength = (grid.renderContainers.body.getCanvasHeight() - grid.renderContainers.body.getViewportHeight());
 
@@ -488,7 +544,7 @@
           if (gridCol !== null) {
             // This is the index of the row we want to scroll to, within the list of rows that can be visible
             var seekColumnIndex = visColCache.indexOf(gridCol);
-            
+
             // Total vertical scroll length of the grid
             var horizScrollLength = (grid.renderContainers.body.getCanvasWidth() - grid.renderContainers.body.getViewportWidth());
 
@@ -562,20 +618,20 @@
           if (!upToCol) {
             return width;
           }
-          
-          var lastIndex = grid.renderContainers.body.visibleColumnCache.indexOf( upToCol );
-          
+
+          var lastIndex = grid.renderContainers.body.visibleColumnCache.indexOf(upToCol);
+
           // total column widths up-to but not including the passed in column
-          grid.renderContainers.body.visibleColumnCache.forEach( function( col, index ) {
-            if ( index < lastIndex ){
-              width += col.drawnWidth;  
+          grid.renderContainers.body.visibleColumnCache.forEach(function (col, index) {
+            if (index < lastIndex) {
+              width += col.drawnWidth;
             }
           });
-          
+
           // pro-rata the final column based on % of total columns.
           var percentage = lastIndex === 0 ? 0 : (lastIndex + 1) / grid.renderContainers.body.visibleColumnCache.length;
           width += upToCol.drawnWidth * percentage;
-           
+
           return width;
         }
       };
@@ -636,19 +692,33 @@
               };
 
               //  gridUtil.logDebug('uiGridEdit preLink');
-              uiGridCtrl.cellNav.broadcastCellNav = function (newRowCol) {
-                $scope.$broadcast(uiGridCellNavConstants.CELL_NAV_EVENT, newRowCol);
-                uiGridCtrl.cellNav.broadcastFocus(newRowCol);
+              uiGridCtrl.cellNav.broadcastCellNav = function (newRowCol, modifierDown) {
+                modifierDown = !(modifierDown === undefined || !modifierDown);
+                uiGridCtrl.cellNav.broadcastFocus(newRowCol, modifierDown);
+                $scope.$broadcast(uiGridCellNavConstants.CELL_NAV_EVENT, newRowCol, modifierDown);
               };
 
-              uiGridCtrl.cellNav.broadcastFocus = function (rowCol) {
-                var row = rowCol.row,
-                    col = rowCol.col;
+              uiGridCtrl.cellNav.broadcastFocus = function (rowCol, modifierDown) {
+                modifierDown = !(modifierDown === undefined || !modifierDown);
 
-                if (grid.cellNav.lastRowCol === null || (grid.cellNav.lastRowCol.row !== row || grid.cellNav.lastRowCol.col !== col)) {
+                var row = rowCol.row,
+                  col = rowCol.col;
+
+                var rowColSelectIndex = uiGridCtrl.grid.api.cellNav.rowColSelectIndex(rowCol);
+
+                if (grid.cellNav.lastRowCol === null || rowColSelectIndex === -1) {
                   var newRowCol = new RowCol(row, col);
                   grid.api.cellNav.raise.navigate(newRowCol, grid.cellNav.lastRowCol);
                   grid.cellNav.lastRowCol = newRowCol;
+                  if (uiGridCtrl.grid.options.modifierKeysToMultiSelectCells && modifierDown) {
+                    grid.cellNav.focusedCells.push(rowCol);
+                  } else {
+                    grid.cellNav.focusedCells = [rowCol];
+                  }
+                } else if (grid.options.modifierKeysToMultiSelectCells && modifierDown &&
+                  rowColSelectIndex >= 0) {
+
+                  grid.cellNav.focusedCells.splice(rowColSelectIndex, 1);
                 }
               };
 
@@ -704,7 +774,7 @@
             },
             post: function ($scope, $elm, $attrs, controllers) {
               var uiGridCtrl = controllers[0],
-                  renderContainerCtrl = controllers[1];
+                renderContainerCtrl = controllers[1];
 
               var containerId = renderContainerCtrl.containerId;
 
@@ -773,26 +843,31 @@
           }
 
           setTabEnabled();
-          
+
           // When a cell is clicked, broadcast a cellNav event saying that this row+col combo is now focused
           $elm.find('div').on('click', function (evt) {
-            uiGridCtrl.cellNav.broadcastCellNav(new RowCol($scope.row, $scope.col));
+            uiGridCtrl.cellNav.broadcastCellNav(new RowCol($scope.row, $scope.col), evt.ctrlKey || evt.metaKey);
 
             evt.stopPropagation();
           });
 
           // This event is fired for all cells.  If the cell matches, then focus is set
-          $scope.$on(uiGridCellNavConstants.CELL_NAV_EVENT, function (evt, rowCol) {
+          $scope.$on(uiGridCellNavConstants.CELL_NAV_EVENT, function (evt, rowCol, modifierDown) {
             if (rowCol.row === $scope.row &&
               rowCol.col === $scope.col) {
-              setFocused();
+              if (uiGridCtrl.grid.options.modifierKeysToMultiSelectCells && modifierDown &&
+                uiGridCtrl.grid.api.cellNav.rowColSelectIndex(rowCol) === -1) {
+                clearFocus();
+              } else {
+                setFocused();
+              }
 
               // This cellNav event came from a keydown event so we can safely refocus
               if (rowCol.hasOwnProperty('eventType') && rowCol.eventType === uiGridCellNavConstants.EVENT_TYPE.KEYDOWN) {
                 $elm.find('div')[0].focus();
               }
             }
-            else {
+            else if (!(uiGridCtrl.grid.options.modifierKeysToMultiSelectCells && modifierDown)) {
               clearFocus();
             }
           });
