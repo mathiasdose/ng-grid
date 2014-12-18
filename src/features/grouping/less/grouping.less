@@ -1,0 +1,23 @@
+@import '../../../less/variables';
+
+.groupingRow {
+  .ui-grid-row {
+
+    &:nth-child(odd) .ui-grid-cell {
+      background-color: @rowColorOdd;
+    }
+
+    &:nth-child(even) .ui-grid-cell {
+      background-color: @rowColorEven;
+    }
+
+    .ui-grid-cell {
+      padding-left: 1em;
+    }
+
+  }
+
+}
+
+
+
