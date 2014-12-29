@@ -104,7 +104,6 @@
         }
       }
 
-
       $scope.$on('$destroy', function() {
         dataWatchCollectionDereg();
         columnDefWatchCollectionDereg();
@@ -118,6 +117,7 @@
       /* Event Methods */
 
       self.fireScrollingEvent = gridUtil.throttle(function(args) {
+        args.grid = args.grid || self.grid;
         $scope.$broadcast(uiGridConstants.events.GRID_SCROLL, args);
       }, self.grid.options.scrollThrottle, {trailing: true});
 
@@ -176,11 +176,13 @@ angular.module('ui.grid').directive('uiGrid',
     '$templateCache',
     'gridUtil',
     '$window',
+    'uiGridConstants',
     function(
       $compile,
       $templateCache,
       gridUtil,
-      $window
+      $window,
+      uiGridConstants
       ) {
       return {
         templateUrl: 'ui-grid/ui-grid',
@@ -219,7 +221,11 @@ angular.module('ui.grid').directive('uiGrid',
                 var contentHeight = grid.options.minRowsToShow * grid.options.rowHeight;
                 var headerHeight = grid.options.showHeader ? grid.options.headerRowHeight : 0;
                 var footerHeight = grid.options.showFooter ? grid.options.footerRowHeight : 0;
-                var scrollbarHeight = grid.options.enableScrollbars ? gridUtil.getScrollbarWidth() : 0;
+                
+                var scrollbarHeight = 0;
+                if (grid.options.enableHorizontalScrollbar === uiGridConstants.scrollbars.ALWAYS) {
+                  scrollbarHeight = gridUtil.getScrollbarWidth();
+                }
 
                 var maxNumberOfFilters = 0;
                 // Calculates the maximum number of filters in the columns

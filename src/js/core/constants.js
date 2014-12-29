@@ -17,7 +17,8 @@
     events: {
       GRID_SCROLL: 'uiGridScroll',
       COLUMN_MENU_SHOWN: 'uiGridColMenuShown',
-      ITEM_DRAGGING: 'uiGridItemDragStart' // For any item being dragged
+      ITEM_DRAGGING: 'uiGridItemDragStart', // For any item being dragged
+      COLUMN_HEADER_CLICK: 'uiGridColumnHeaderClick'
     },
     // copied from http://www.lsauer.com/2011/08/javascript-keymap-keycodes-in-json.html
     keymap: {
@@ -38,6 +39,8 @@
       WIN: 91,
       MAC: 91,
       FN: null,
+      PG_UP: 33,
+      PG_DOWN: 34,
       UP: 38,
       DOWN: 40,
       LEFT: 37,
@@ -86,7 +89,8 @@
       ALL: 'all',
       EDIT: 'edit',
       ROW: 'row',
-      COLUMN: 'column'
+      COLUMN: 'column',
+      OPTIONS: 'options'
     },
     scrollbars: {
       NEVER: 0,

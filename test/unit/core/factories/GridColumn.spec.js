@@ -43,6 +43,31 @@ describe('GridColumn factory', function () {
       });
     });
 
+    it('should add a column with a sort, sort is copied', function () {
+      var sort = { priority: 0, direction: 'asc' };
+      grid.options.columnDefs[1] = { field: 'surname', sort: sort };
+
+      runs(buildCols);
+
+      runs(function () {
+        expect(grid.columns[1].sort).toEqual(sort);
+      });
+    });
+
+    it('should not update sort when updating a column, but visible flag does update', function () {
+      var sort = { priority: 0, direction: 'asc' };
+      grid.options.columnDefs[0].sort = sort;
+      grid.options.columnDefs[0].visible = false;
+
+      runs(buildCols);
+
+      runs(function () {
+        expect(grid.columns[0].sort).toEqual({});
+        expect(grid.columns[0].visible).toEqual(false);
+      });
+    });
+
+
     it('should obey columnDef sort spec', function () {
       // ... TODO(c0bra)
     });
@@ -208,6 +233,36 @@ describe('GridColumn factory', function () {
       expect(grid.columns[1].getAggregationValue()).toEqual(5);
       expect(grid.columns[1].getAggregationText()).toEqual('');
     });
+
+    it('max, with custom label', function() {
+      var customLabel = 'custom label';
+
+      grid.options.columnDefs[1].aggregationType = uiGridConstants.aggregationTypes.max;
+      grid.options.columnDefs[1].aggregationLabel = customLabel;
+      grid.options.columnDefs[1].aggregationHideLabel = false;
+
+      buildCols();
+      grid.modifyRows(grid.options.data);
+      grid.setVisibleRows(grid.rows);
+
+      expect(grid.columns[1].getAggregationValue()).toEqual(5);
+      expect(grid.columns[1].getAggregationText()).toEqual(customLabel);
+    });
+
+    it('max, with custom label while also being hidden', function() {
+      var customLabel = 'custom label';
+
+      grid.options.columnDefs[1].aggregationType = uiGridConstants.aggregationTypes.max;
+      grid.options.columnDefs[1].aggregationLabel = customLabel;
+      grid.options.columnDefs[1].aggregationHideLabel = true;
+
+      buildCols();
+      grid.modifyRows(grid.options.data);
+      grid.setVisibleRows(grid.rows);
+
+      expect(grid.columns[1].getAggregationValue()).toEqual(5);
+      expect(grid.columns[1].getAggregationText()).toEqual('');
+    });
   });
 
   describe('unsort', function() {
@@ -239,7 +294,7 @@ describe('GridColumn factory', function () {
     });
 
     it('should return a promise', function () {
-      expect(col.getCompiledElementFn().hasOwnProperty('then')).toBe(true);
+      expect('then' in col.getCompiledElementFn()).toBe(true);
     });
 
     it('should return a promise that is resolved when the cellTemplate is compiled', function () {
@@ -306,7 +361,7 @@ describe('GridColumn factory', function () {
     });
 
     it('should return a promise', function () {
-      expect(col.getCellTemplate().hasOwnProperty('then')).toBe(true);
+      expect('then' in col.getCellTemplate()).toBe(true);
     });
 
     it('should return a promise that is resolved when a URL-based cellTemplate is available', function () {

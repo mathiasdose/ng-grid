@@ -92,7 +92,7 @@
                  * File object
                  */
                 importFile: function ( grid, fileObject ) {
-                  service.importFile( grid, fileObject );
+                  service.importThisFile( grid, fileObject );
                 }
               }
             }
@@ -722,10 +722,12 @@
         templateUrl: 'ui-grid/importerMenuItem',
         link: function ($scope, $elm, $attrs, uiGridCtrl) {
           var handleFileSelect = function( event ){
-            if (event.srcElement.files.length === 1) {
+            var target = event.srcElement || event.target;
+            
+            if (target && target.files && target.files.length === 1) {
               var fileObject = event.srcElement.files[0];
               uiGridImporterService.importThisFile( grid, fileObject );
-              event.srcElement.form.reset();
+              target.form.reset();
             }
           };
 

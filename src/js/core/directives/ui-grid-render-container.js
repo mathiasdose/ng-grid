@@ -74,11 +74,16 @@
             }
 
             function scrollHandler (evt, args) {
+              // exit if not for this grid
+              if (args.grid && args.grid.id !== grid.id){
+                return;
+              }
+              
               // Vertical scroll
               if (args.y && $scope.bindScrollVertical) {
                 containerCtrl.prevScrollArgs = args;
 
-                var scrollLength = (rowContainer.getCanvasHeight() - rowContainer.getViewportHeight());
+                var scrollLength = rowContainer.getVerticalScrollLength();
 
                 // Add the height of the native horizontal scrollbar, if it's there. Otherwise it will mask over the final row
                 if (grid.horizontalScrollbarHeight && grid.horizontalScrollbarHeight > 0) {
@@ -166,7 +171,7 @@
                 var scrollYAmount = newEvent.deltaY * -120;
 
                 // Get the scroll percentage
-                var scrollYPercentage = (containerCtrl.viewport[0].scrollTop + scrollYAmount) / (rowContainer.getCanvasHeight() - rowContainer.getViewportHeight());
+                var scrollYPercentage = (containerCtrl.viewport[0].scrollTop + scrollYAmount) / rowContainer.getVerticalScrollLength();
 
                 // Keep scrollPercentage within the range 0-1.
                 if (scrollYPercentage < 0) { scrollYPercentage = 0; }
@@ -222,7 +227,7 @@
               var args = { target: event.target };
 
               if (deltaY !== 0) {
-                var scrollYPercentage = (scrollTopStart + deltaY) / (rowContainer.getCanvasHeight() - rowContainer.getViewportHeight());
+                var scrollYPercentage = (scrollTopStart + deltaY) / rowContainer.getVerticalScrollLength();
 
                 if (scrollYPercentage > 1) { scrollYPercentage = 1; }
                 else if (scrollYPercentage < 0) { scrollYPercentage = 0; }
@@ -245,8 +250,6 @@
               if (event.originalEvent) {
                 event = event.originalEvent;
               }
-
-              event.preventDefault();
 
               $document.unbind('touchmove', touchmove);
               $document.unbind('touchend', touchend);
@@ -275,7 +278,7 @@
                   var args = { target: event.target };
 
                   if (scrollYLength !== 0) {
-                    var scrollYPercentage = (containerCtrl.viewport[0].scrollTop + scrollYLength) / (rowContainer.getCanvasHeight() - rowContainer.getViewportHeight());
+                    var scrollYPercentage = (containerCtrl.viewport[0].scrollTop + scrollYLength) / rowContainer.getVerticalScrollLength();
 
                     args.y = { percentage: scrollYPercentage, pixels: scrollYLength };
                   }
@@ -303,7 +306,7 @@
                 }, decelerateInterval);
               }
 
-              decelerate();
+              // decelerate();
             }
 
             if (GridUtil.isTouchEnabled()) {
@@ -311,8 +314,6 @@
                 if (event.originalEvent) {
                   event = event.originalEvent;
                 }
-
-                event.preventDefault();
 
                 uiGridCtrl.scrollbars.forEach(function (sbar) {
                   sbar.addClass('ui-grid-scrollbar-visible');

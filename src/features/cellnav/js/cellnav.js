@@ -16,7 +16,7 @@
   module.constant('uiGridCellNavConstants', {
     FEATURE_NAME: 'gridCellNav',
     CELL_NAV_EVENT: 'cellNav',
-    direction: {LEFT: 0, RIGHT: 1, UP: 2, DOWN: 3},
+    direction: {LEFT: 0, RIGHT: 1, UP: 2, DOWN: 3, PG_UP: 4, PG_DOWN: 5},
     EVENT_TYPE: {
       KEYDOWN: 0,
       CLICK: 1
@@ -40,6 +40,7 @@
         this.columns = colContainer.visibleColumnCache;
         this.leftColumns = leftColContainer ? leftColContainer.visibleColumnCache : [];
         this.rightColumns = rightColContainer ? rightColContainer.visibleColumnCache : [];
+        this.bodyContainer = rowContainer;
       };
 
       /** returns focusable columns of all containers */
@@ -48,6 +49,29 @@
 
         return allColumns.filter(function (col) {
           return col.colDef.allowCellFocus;
+        });
+      };
+
+      /**
+       *  @ngdoc object
+       *  @name ui.grid.cellNav.api:GridRow
+       *
+       *  @description GridRow settings for cellNav feature, these are available to be
+       *  set only internally (for example, by other features)
+       */
+
+      /**
+       *  @ngdoc object
+       *  @name allowCellFocus
+       *  @propertyOf  ui.grid.cellNav.api:GridRow
+       *  @description Enable focus on a cell within this row.  If set to false then no cells
+       *  in this row can be focused - group header rows as an example would set this to false.
+       *  <br/>Defaults to true
+       */
+      /** returns focusable rows */
+      UiGridCellNav.prototype.getFocusableRows = function () {
+        return this.rows.filter(function(row) {
+          return row.allowCellFocus !== false;
         });
       };
 
@@ -61,14 +85,19 @@
             return this.getRowColUp(curRow, curCol);
           case uiGridCellNavConstants.direction.DOWN:
             return this.getRowColDown(curRow, curCol);
+          case uiGridCellNavConstants.direction.PG_UP:
+            return this.getRowColPageUp(curRow, curCol);
+          case uiGridCellNavConstants.direction.PG_DOWN:
+            return this.getRowColPageDown(curRow, curCol);
         }
 
       };
 
       UiGridCellNav.prototype.getRowColLeft = function (curRow, curCol) {
         var focusableCols = this.getFocusableCols();
+        var focusableRows = this.getFocusableRows();
         var curColIndex = focusableCols.indexOf(curCol);
-        var curRowIndex = this.rows.indexOf(curRow);
+        var curRowIndex = focusableRows.indexOf(curRow);
 
         //could not find column in focusable Columns so set it to 1
         if (curColIndex === -1) {
@@ -84,7 +113,7 @@
           }
           else {
             //up one row and far right column
-            return new RowCol(this.rows[curRowIndex - 1], focusableCols[nextColIndex]);
+            return new RowCol(focusableRows[curRowIndex - 1], focusableCols[nextColIndex]);
           }
         }
         else {
@@ -94,8 +123,9 @@
 
       UiGridCellNav.prototype.getRowColRight = function (curRow, curCol) {
         var focusableCols = this.getFocusableCols();
+        var focusableRows = this.getFocusableRows();
         var curColIndex = focusableCols.indexOf(curCol);
-        var curRowIndex = this.rows.indexOf(curRow);
+        var curRowIndex = focusableRows.indexOf(curRow);
 
         //could not find column in focusable Columns so set it to 0
         if (curColIndex === -1) {
@@ -104,12 +134,12 @@
         var nextColIndex = curColIndex === focusableCols.length - 1 ? 0 : curColIndex + 1;
 
         if (nextColIndex < curColIndex) {
-          if (curRowIndex === this.rows.length - 1) {
+          if (curRowIndex === focusableRows.length - 1) {
             return new RowCol(curRow, focusableCols[nextColIndex]); //return same row
           }
           else {
             //down one row and far left column
-            return new RowCol(this.rows[curRowIndex + 1], focusableCols[nextColIndex]);
+            return new RowCol(focusableRows[curRowIndex + 1], focusableCols[nextColIndex]);
           }
         }
         else {
@@ -119,27 +149,50 @@
 
       UiGridCellNav.prototype.getRowColDown = function (curRow, curCol) {
         var focusableCols = this.getFocusableCols();
+        var focusableRows = this.getFocusableRows();
         var curColIndex = focusableCols.indexOf(curCol);
-        var curRowIndex = this.rows.indexOf(curRow);
+        var curRowIndex = focusableRows.indexOf(curRow);
 
         //could not find column in focusable Columns so set it to 0
         if (curColIndex === -1) {
           curColIndex = 0;
         }
 
-        if (curRowIndex === this.rows.length - 1) {
+        if (curRowIndex === focusableRows.length - 1) {
           return new RowCol(curRow, focusableCols[curColIndex]); //return same row
         }
         else {
           //down one row
-          return new RowCol(this.rows[curRowIndex + 1], focusableCols[curColIndex]);
+          return new RowCol(focusableRows[curRowIndex + 1], focusableCols[curColIndex]);
+        }
+      };
+
+      UiGridCellNav.prototype.getRowColPageDown = function (curRow, curCol) {
+        var focusableCols = this.getFocusableCols();
+        var focusableRows = this.getFocusableRows();
+        var curColIndex = focusableCols.indexOf(curCol);
+        var curRowIndex = focusableRows.indexOf(curRow);
+
+        //could not find column in focusable Columns so set it to 0
+        if (curColIndex === -1) {
+          curColIndex = 0;
+        }
+
+        var pageSize = this.bodyContainer.minRowsToRender();
+        if (curRowIndex >= focusableRows.length - pageSize) {
+          return new RowCol(focusableRows[focusableRows.length - 1], focusableCols[curColIndex]); //return last row
+        }
+        else {
+          //down one page
+          return new RowCol(focusableRows[curRowIndex + pageSize], focusableCols[curColIndex]);
         }
       };
 
       UiGridCellNav.prototype.getRowColUp = function (curRow, curCol) {
         var focusableCols = this.getFocusableCols();
+        var focusableRows = this.getFocusableRows();
         var curColIndex = focusableCols.indexOf(curCol);
-        var curRowIndex = this.rows.indexOf(curRow);
+        var curRowIndex = focusableRows.indexOf(curRow);
 
         //could not find column in focusable Columns so set it to 0
         if (curColIndex === -1) {
@@ -151,10 +204,30 @@
         }
         else {
           //up one row
-          return new RowCol(this.rows[curRowIndex - 1], focusableCols[curColIndex]);
+          return new RowCol(focusableRows[curRowIndex - 1], focusableCols[curColIndex]);
         }
       };
 
+      UiGridCellNav.prototype.getRowColPageUp = function (curRow, curCol) {
+        var focusableCols = this.getFocusableCols();
+        var focusableRows = this.getFocusableRows();
+        var curColIndex = focusableCols.indexOf(curCol);
+        var curRowIndex = focusableRows.indexOf(curRow);
+
+        //could not find column in focusable Columns so set it to 0
+        if (curColIndex === -1) {
+          curColIndex = 0;
+        }
+
+        var pageSize = this.bodyContainer.minRowsToRender();
+        if (curRowIndex - pageSize < 0) {
+          return new RowCol(focusableRows[0], focusableCols[curColIndex]); //return first row
+        }
+        else {
+          //up one page
+          return new RowCol(focusableRows[curRowIndex - pageSize], focusableCols[curColIndex]);
+        }
+      };
       return UiGridCellNav;
     }]);
 
@@ -176,6 +249,9 @@
           //create variables for state
           grid.cellNav = {};
           grid.cellNav.lastRowCol = null;
+          grid.cellNav.focusedCells = [];
+
+          service.defaultGridOptions(grid.options);
 
           /**
            *  @ngdoc object
@@ -208,14 +284,26 @@
                  * @name scrollTo
                  * @methodOf  ui.grid.cellNav.api:PublicApi
                  * @description brings the specified row and column into view
-                 * @param {Grid} grid the grid you'd like to act upon, usually available
-                 * from gridApi.grid
                  * @param {object} $scope a scope we can broadcast events from
                  * @param {object} rowEntity gridOptions.data[] array instance to make visible
                  * @param {object} colDef to make visible
                  */
-                scrollTo: function (grid, $scope, rowEntity, colDef) {
+                scrollTo: function ($scope, rowEntity, colDef) {
                   service.scrollTo(grid, $scope, rowEntity, colDef);
+                },
+
+                /**
+                 * @ngdoc function
+                 * @name scrollToFocus
+                 * @methodOf  ui.grid.cellNav.api:PublicApi
+                 * @description brings the specified row and column into view, and sets focus
+                 * to that cell
+                 * @param {object} $scope a scope we can broadcast events from
+                 * @param {object} rowEntity gridOptions.data[] array instance to make visible and set focus
+                 * @param {object} colDef to make visible and set focus
+                 */
+                scrollToFocus: function ($scope, rowEntity, colDef) {
+                  service.scrollToFocus(grid, $scope, rowEntity, colDef);
                 },
 
                 /**
@@ -227,6 +315,38 @@
                  */
                 getFocusedCell: function () {
                   return grid.cellNav.lastRowCol;
+                },
+
+                /**
+                 * @ngdoc function
+                 * @name getCurrentSelection
+                 * @methodOf  ui.grid.cellNav.api:PublicApi
+                 * @description returns an array containing the current selection
+                 * <br> array is empty if no selection has occurred
+                 */
+                getCurrentSelection: function () {
+                  return grid.cellNav.focusedCells;
+                },
+
+                /**
+                 * @ngdoc function
+                 * @name rowColSelectIndex
+                 * @methodOf  ui.grid.cellNav.api:PublicApi
+                 * @description returns the index in the order in which the RowCol was selected, returns -1 if the RowCol
+                 * isn't selected
+                 * @param {object} rowCol the rowCol to evaluate
+                 */
+                rowColSelectIndex: function (rowCol) {
+                  //return gridUtil.arrayContainsObjectWithProperty(grid.cellNav.focusedCells, 'col.uid', rowCol.col.uid) &&
+                  var index = -1;
+                  for (var i = 0; i < grid.cellNav.focusedCells.length; i++) {
+                    if (grid.cellNav.focusedCells[i].col.uid === rowCol.col.uid &&
+                      grid.cellNav.focusedCells[i].row.uid === rowCol.row.uid) {
+                      index = i;
+                      break;
+                    }
+                  }
+                  return index;
                 }
               }
             }
@@ -235,6 +355,26 @@
           grid.api.registerEventsFromObject(publicApi.events);
 
           grid.api.registerMethodsFromObject(publicApi.methods);
+
+        },
+
+        defaultGridOptions: function (gridOptions) {
+          /**
+           *  @ngdoc object
+           *  @name ui.grid.cellNav.api:GridOptions
+           *
+           *  @description GridOptions for cellNav feature, these are available to be
+           *  set using the ui-grid {@link ui.grid.class:GridOptions gridOptions}
+           */
+
+          /**
+           *  @ngdoc object
+           *  @name modifierKeysToMultiSelectCells
+           *  @propertyOf  ui.grid.cellNav.api:GridOptions
+           *  @description Enable multiple cell selection only when using the ctrlKey or shiftKey.
+           *  <br/>Defaults to false
+           */
+          gridOptions.modifierKeysToMultiSelectCells = gridOptions.modifierKeysToMultiSelectCells === true;
 
         },
 
@@ -277,13 +417,21 @@
           }
 
           if (evt.keyCode === uiGridConstants.keymap.UP ||
-            (evt.keyCode === uiGridConstants.keymap.ENTER && evt.shiftKey)) {
+            (evt.keyCode === uiGridConstants.keymap.ENTER && evt.shiftKey) ) {
             return uiGridCellNavConstants.direction.UP;
+          }
+
+          if (evt.keyCode === uiGridConstants.keymap.PG_UP){
+            return uiGridCellNavConstants.direction.PG_UP;
           }
 
           if (evt.keyCode === uiGridConstants.keymap.DOWN ||
             evt.keyCode === uiGridConstants.keymap.ENTER) {
             return uiGridCellNavConstants.direction.DOWN;
+          }
+
+          if (evt.keyCode === uiGridConstants.keymap.PG_DOWN){
+            return uiGridCellNavConstants.direction.PG_DOWN;
           }
 
           return null;
@@ -311,7 +459,7 @@
            *  @ngdoc object
            *  @name allowCellFocus
            *  @propertyOf  ui.grid.cellNav.api:ColumnDef
-           *  @description Enable focus on a cell.
+           *  @description Enable focus on a cell within this column.
            *  <br/>Defaults to true
            */
           colDef.allowCellFocus = colDef.allowCellFocus === undefined ? true : colDef.allowCellFocus;
@@ -334,6 +482,31 @@
         scrollTo: function (grid, $scope, rowEntity, colDef) {
           var gridRow = null, gridCol = null;
 
+          if (rowEntity !== null && typeof(rowEntity) !== 'undefined' ) {
+            gridRow = grid.getRow(rowEntity);
+          }
+
+          if (colDef !== null && typeof(colDef) !== 'undefined' ) {
+            gridCol = grid.getColumn(colDef.name ? colDef.name : colDef.field);
+          }
+          this.scrollToInternal(grid, $scope, gridRow, gridCol);
+        },
+
+        /**
+         * @ngdoc method
+         * @methodOf ui.grid.cellNav.service:uiGridCellNavService
+         * @name scrollToFocus
+         * @description Scroll the grid such that the specified
+         * row and column is in view, and set focus to the cell in that row and column
+         * @param {Grid} grid the grid you'd like to act upon, usually available
+         * from gridApi.grid
+         * @param {object} $scope a scope we can broadcast events from
+         * @param {object} rowEntity gridOptions.data[] array instance to make visible and set focus to
+         * @param {object} colDef to make visible and set focus to
+         */
+        scrollToFocus: function (grid, $scope, rowEntity, colDef) {
+          var gridRow = null, gridCol = null;
+
           if (rowEntity !== null) {
             gridRow = grid.getRow(rowEntity);
           }
@@ -342,6 +515,12 @@
             gridCol = grid.getColumn(colDef.name ? colDef.name : colDef.field);
           }
           this.scrollToInternal(grid, $scope, gridRow, gridCol);
+
+          var rowCol = { row: gridRow, col: gridCol };
+
+          // Broadcast the navigation
+          grid.cellNav.broadcastCellNav(rowCol);
+
         },
 
         /**
@@ -351,20 +530,20 @@
          * @description Like scrollTo, but takes gridRow and gridCol.
          * In calculating the scroll height we have to deal with wanting
          * 0% for the first row, and 100% for the last row.  Normal maths
-         * for a 10 row list would return 1/10 = 10% for the first row, so 
+         * for a 10 row list would return 1/10 = 10% for the first row, so
          * we need to tweak the numbers to add an extra 10% somewhere.  The
          * formula if we're trying to get to row 0 in a 10 row list (assuming our
          * index is zero based, so the last row is row 9) is:
          * <pre>
          *   0 + 0 / 10 = 0%
          * </pre>
-         * 
-         * To get to row 9 (i.e. the last row) in the same list, we want to 
+         *
+         * To get to row 9 (i.e. the last row) in the same list, we want to
          * go to:
          * <pre>
          *  ( 9 + 1 ) / 10 = 100%
          * </pre>
-         * So we need to apportion one whole row within the overall grid scroll, 
+         * So we need to apportion one whole row within the overall grid scroll,
          * the formula is:
          * <pre>
          *   ( index + ( index / (total rows - 1) ) / total rows
@@ -378,15 +557,17 @@
         scrollToInternal: function (grid, $scope, gridRow, gridCol) {
           var args = {};
 
+          args.grid = grid;
+
           if (gridRow !== null) {
             var seekRowIndex = grid.renderContainers.body.visibleRowCache.indexOf(gridRow);
             var totalRows = grid.renderContainers.body.visibleRowCache.length;
             var percentage = ( seekRowIndex + ( seekRowIndex / ( totalRows - 1 ) ) ) / totalRows;
-            args.y = { percentage:  percentage  };
+            args.y = { percentage: percentage  };
           }
 
           if (gridCol !== null) {
-            args.x = { percentage: this.getLeftWidth(grid, gridCol) / this.getLeftWidth(grid, grid.renderContainers.body.visibleColumnCache[grid.renderContainers.body.visibleColumnCache.length - 1] ) };
+            args.x = { percentage: this.getLeftWidth(grid, gridCol) / this.getLeftWidth(grid, grid.renderContainers.body.visibleColumnCache[grid.renderContainers.body.visibleColumnCache.length - 1]) };
           }
 
           if (args.y || args.x) {
@@ -409,7 +590,9 @@
         scrollToIfNecessary: function (grid, $scope, gridRow, gridCol) {
           var args = {};
 
-          // Alias the visible row and column caches 
+          args.grid = grid;
+
+          // Alias the visible row and column caches
           var visRowCache = grid.renderContainers.body.visibleRowCache;
           var visColCache = grid.renderContainers.body.visibleColumnCache;
 
@@ -445,7 +628,7 @@
           if (gridRow !== null) {
             // This is the index of the row we want to scroll to, within the list of rows that can be visible
             var seekRowIndex = visRowCache.indexOf(gridRow);
-            
+
             // Total vertical scroll length of the grid
             var scrollLength = (grid.renderContainers.body.getCanvasHeight() - grid.renderContainers.body.getViewportHeight());
 
@@ -488,7 +671,7 @@
           if (gridCol !== null) {
             // This is the index of the row we want to scroll to, within the list of rows that can be visible
             var seekColumnIndex = visColCache.indexOf(gridCol);
-            
+
             // Total vertical scroll length of the grid
             var horizScrollLength = (grid.renderContainers.body.getCanvasWidth() - grid.renderContainers.body.getViewportWidth());
 
@@ -562,20 +745,20 @@
           if (!upToCol) {
             return width;
           }
-          
+
           var lastIndex = grid.renderContainers.body.visibleColumnCache.indexOf( upToCol );
-          
+
           // total column widths up-to but not including the passed in column
           grid.renderContainers.body.visibleColumnCache.forEach( function( col, index ) {
             if ( index < lastIndex ){
-              width += col.drawnWidth;  
+              width += col.drawnWidth;
             }
           });
-          
+
           // pro-rata the final column based on % of total columns.
           var percentage = lastIndex === 0 ? 0 : (lastIndex + 1) / grid.renderContainers.body.visibleColumnCache.length;
           width += upToCol.drawnWidth * percentage;
-           
+
           return width;
         }
       };
@@ -626,6 +809,7 @@
         compile: function () {
           return {
             pre: function ($scope, $elm, $attrs, uiGridCtrl) {
+              var _scope = $scope;
 
               var grid = uiGridCtrl.grid;
               uiGridCellNavService.initializeGrid(grid);
@@ -637,19 +821,33 @@
               };
 
               //  gridUtil.logDebug('uiGridEdit preLink');
-              uiGridCtrl.cellNav.broadcastCellNav = function (newRowCol) {
-                $scope.$broadcast(uiGridCellNavConstants.CELL_NAV_EVENT, newRowCol);
-                uiGridCtrl.cellNav.broadcastFocus(newRowCol);
+              uiGridCtrl.cellNav.broadcastCellNav = grid.cellNav.broadcastCellNav = function (newRowCol, modifierDown) {
+                modifierDown = !(modifierDown === undefined || !modifierDown);
+                uiGridCtrl.cellNav.broadcastFocus(newRowCol, modifierDown);
+                _scope.$broadcast(uiGridCellNavConstants.CELL_NAV_EVENT, newRowCol, modifierDown);
               };
 
-              uiGridCtrl.cellNav.broadcastFocus = function (rowCol) {
-                var row = rowCol.row,
-                    col = rowCol.col;
+              uiGridCtrl.cellNav.broadcastFocus = function (rowCol, modifierDown) {
+                modifierDown = !(modifierDown === undefined || !modifierDown);
 
-                if (grid.cellNav.lastRowCol === null || (grid.cellNav.lastRowCol.row !== row || grid.cellNav.lastRowCol.col !== col)) {
+                var row = rowCol.row,
+                  col = rowCol.col;
+
+                var rowColSelectIndex = uiGridCtrl.grid.api.cellNav.rowColSelectIndex(rowCol);
+
+                if (grid.cellNav.lastRowCol === null || rowColSelectIndex === -1) {
                   var newRowCol = new RowCol(row, col);
                   grid.api.cellNav.raise.navigate(newRowCol, grid.cellNav.lastRowCol);
                   grid.cellNav.lastRowCol = newRowCol;
+                  if (uiGridCtrl.grid.options.modifierKeysToMultiSelectCells && modifierDown) {
+                    grid.cellNav.focusedCells.push(rowCol);
+                  } else {
+                    grid.cellNav.focusedCells = [rowCol];
+                  }
+                } else if (grid.options.modifierKeysToMultiSelectCells && modifierDown &&
+                  rowColSelectIndex >= 0) {
+
+                  grid.cellNav.focusedCells.splice(rowColSelectIndex, 1);
                 }
               };
 
@@ -703,11 +901,12 @@
           return {
             post: function ($scope, $elm, $attrs, controllers) {
               var uiGridCtrl = controllers[0],
-                  renderContainerCtrl = controllers[1],
-                  cellNavController = controllers[2];
+                 renderContainerCtrl = controllers[1],
+                 cellNavController = controllers[2];
 
               // Skip attaching cell-nav specific logic if the directive is not attached above us
               if (!cellNavController) { return; }
+
 
               var containerId = renderContainerCtrl.containerId;
 
@@ -727,6 +926,11 @@
 
               // When there's a scroll event we need to make sure to re-focus the right row, because the cell contents may have changed
               $scope.$on(uiGridConstants.events.GRID_SCROLL, function (evt, args) {
+                // Skip if not this grid that the event was broadcast for
+                if (args.grid && args.grid.id !== uiGridCtrl.grid.id) {
+                  return;
+                }
+
                 // Skip if there's no currently-focused cell
                 if (uiGridCtrl.grid.api.cellNav.getFocusedCell() == null) {
                   return;
@@ -782,26 +986,31 @@
           }
 
           setTabEnabled();
-          
+
           // When a cell is clicked, broadcast a cellNav event saying that this row+col combo is now focused
           $elm.find('div').on('click', function (evt) {
-            uiGridCtrl.cellNav.broadcastCellNav(new RowCol($scope.row, $scope.col));
+            uiGridCtrl.cellNav.broadcastCellNav(new RowCol($scope.row, $scope.col), evt.ctrlKey || evt.metaKey);
 
             evt.stopPropagation();
           });
 
           // This event is fired for all cells.  If the cell matches, then focus is set
-          $scope.$on(uiGridCellNavConstants.CELL_NAV_EVENT, function (evt, rowCol) {
+          $scope.$on(uiGridCellNavConstants.CELL_NAV_EVENT, function (evt, rowCol, modifierDown) {
             if (rowCol.row === $scope.row &&
               rowCol.col === $scope.col) {
-              setFocused();
+              if (uiGridCtrl.grid.options.modifierKeysToMultiSelectCells && modifierDown &&
+                uiGridCtrl.grid.api.cellNav.rowColSelectIndex(rowCol) === -1) {
+                clearFocus();
+              } else {
+                setFocused();
+              }
 
               // This cellNav event came from a keydown event so we can safely refocus
               if (rowCol.hasOwnProperty('eventType') && rowCol.eventType === uiGridCellNavConstants.EVENT_TYPE.KEYDOWN) {
                 $elm.find('div')[0].focus();
               }
             }
-            else {
+            else if (!(uiGridCtrl.grid.options.modifierKeysToMultiSelectCells && modifierDown)) {
               clearFocus();
             }
           });

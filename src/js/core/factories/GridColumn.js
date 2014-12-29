@@ -105,7 +105,7 @@ angular.module('ui.grid')
     self.grid = grid;
     self.uid = uid;
 
-    self.updateColumnDef(colDef);
+    self.updateColumnDef(colDef, true );
   }
 
 
@@ -303,8 +303,11 @@ angular.module('ui.grid')
    * @description Moves settings from the columnDef down onto the column,
    * and sets properties as appropriate
    * @param {ColumnDef} colDef the column def to look in for the property value
+   * @param {boolean} isNew whether the column is being newly created, if not
+   * we're updating an existing column, and some items such as the sort shouldn't
+   * be copied down
    */ 
-  GridColumn.prototype.updateColumnDef = function(colDef) {
+  GridColumn.prototype.updateColumnDef = function(colDef, isNew) {
     var self = this;
 
     self.colDef = colDef;
@@ -446,8 +449,6 @@ angular.module('ui.grid')
     self.headerClass = colDef.headerClass;
     //self.cursor = self.sortable ? 'pointer' : 'default';
 
-    self.visible = true;
-
     // Turn on sorting by default
     self.enableSorting = typeof(colDef.enableSorting) !== 'undefined' ? colDef.enableSorting : true;
     self.sortingAlgorithm = colDef.sortingAlgorithm;
@@ -469,8 +470,10 @@ angular.module('ui.grid')
     // self.menuItems = colDef.menuItems;
     self.setPropertyOrDefault(colDef, 'menuItems', []);
 
-    // Use the column definition sort if we were passed it
-    self.setPropertyOrDefault(colDef, 'sort');
+    // Use the column definition sort if we were passed it, but only if this is a newly added column
+    if ( isNew ){
+      self.setPropertyOrDefault(colDef, 'sort');
+    }
 
     // Set up default filters array for when one is not provided.
     //   In other words, this (in column def):
@@ -535,8 +538,13 @@ angular.module('ui.grid')
 
     */
 
-    self.setPropertyOrDefault(colDef, 'filter');
-    self.setPropertyOrDefault(colDef, 'filters', defaultFilters);
+    // Only set filter if this is a newly added column, if we're updating an existing
+    // column then we don't want to put the default filter back if the user may have already
+    // removed it.
+    if ( isNew ) {
+      self.setPropertyOrDefault(colDef, 'filter');
+      self.setPropertyOrDefault(colDef, 'filters', defaultFilters);
+    }
 
     // Remove this column from the grid sorting, include inside build columns so has
     // access to self - all seems a bit dodgy but doesn't work otherwise so have left
@@ -638,26 +646,26 @@ angular.module('ui.grid')
       return self.aggregationType(visibleRows, self);
     }
     else if (self.aggregationType === uiGridConstants.aggregationTypes.count) {
-      return self.getAggregationText('aggregation.count', self.grid.getVisibleRowCount());
+      return self.grid.getVisibleRowCount();
     }
     else if (self.aggregationType === uiGridConstants.aggregationTypes.sum) {
       angular.forEach(cellValues(), function (value) {
         result += value;
       });
-      return self.getAggregationText('aggregation.sum', result);
+      return result;
     }
     else if (self.aggregationType === uiGridConstants.aggregationTypes.avg) {
       angular.forEach(cellValues(), function (value) {
         result += value;
       });
       result = result / cellValues().length;
-      return self.getAggregationText('aggregation.avg', result);
+      return result;
     }
     else if (self.aggregationType === uiGridConstants.aggregationTypes.min) {
-      return self.getAggregationText('aggregation.min', Math.min.apply(null, cellValues()));
+      return Math.min.apply(null, cellValues());
     }
     else if (self.aggregationType === uiGridConstants.aggregationTypes.max) {
-      return self.getAggregationText('aggregation.max', Math.max.apply(null, cellValues()));
+      return Math.max.apply(null, cellValues());
     }
     else {
       return '\u00A0';
@@ -676,9 +684,10 @@ angular.module('ui.grid')
    * @ngdoc function
    * @name getAggregationText
    * @methodOf ui.grid.class:GridColumn
-   * @description Gets the aggregation label using i18n, including 
-   * deciding whether or not to display based on colDef.aggregationHideLabel
-   * 
+   * @description Gets the aggregation label from colDef.aggregationLabel if
+   * specified or by using i18n, including deciding whether or not to display
+   * based on colDef.aggregationHideLabel.
+   *
    * @param {string} label the i18n lookup value to use for the column label
    * 
    */
@@ -686,7 +695,11 @@ angular.module('ui.grid')
     var self = this;
     if ( self.colDef.aggregationHideLabel ){
       return '';
-    } else {
+    }
+    else if ( self.colDef.aggregationLabel ) {
+      return self.colDef.aggregationLabel;
+    }
+    else {
       switch ( self.colDef.aggregationType ){
         case uiGridConstants.aggregationTypes.count:
           return i18nService.getSafeText('aggregation.count');
@@ -712,7 +725,7 @@ angular.module('ui.grid')
 
   GridColumn.prototype.getCompiledElementFn = function () {
     var self = this;
-    
+
     return self.compiledElementFnDefer.promise;
   };
 

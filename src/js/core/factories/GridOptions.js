@@ -24,18 +24,44 @@ angular.module('ui.grid')
    *
    * To provide default options for all of the grids within your application, use an angular
    * decorator to modify the GridOptions factory.
-   * <pre>app.config(function($provide){
-   *    $provide.decorator('GridOptions',function($delegate){
-   *      return function(){
-   *        var defaultOptions = new $delegate();
-   *        defaultOptions.excludeProperties = ['id' ,'$$hashKey'];
-   *        return defaultOptions;
-   *      };
-   *    })
-   *  })</pre>
+   * <pre>
+   * app.config(function($provide){
+   *   $provide.decorator('GridOptions',function($delegate){
+   *     var gridOptions;
+   *     gridOptions = angular.copy($delegate);
+   *     gridOptions.initialize = function(options) {
+   *       var initOptions;
+   *       initOptions = $delegate.initialize(options);
+   *       initOptions.enableColumnMenus = false;
+   *       return initOptions;
+   *     };
+   *     return gridOptions;
+   *   });
+   * });
+   * </pre>
    */
   return {
     initialize: function( baseOptions ){
+      /**
+       * @ngdoc function
+       * @name onRegisterApi
+       * @propertyOf ui.grid.class:GridOptions
+       * @description A callback that returns the gridApi once the grid is instantiated, which is 
+       * then used to interact with the grid programatically.
+       * 
+       * Note that the gridApi.core.renderingComplete event is identical to this 
+       * callback, but has the advantage that it can be called from multiple places
+       * if needed
+       * 
+       * @example
+       * <pre>
+       *   $scope.gridOptions.onRegisterApi = function ( gridApi ) {
+       *     $scope.gridApi = gridApi;
+       *     $scope.gridApi.selection.selectAllRows( $scope.gridApi.grid );
+       *   };
+       * </pre>
+       * 
+       */
       baseOptions.onRegisterApi = baseOptions.onRegisterApi || angular.noop();
   
       /**

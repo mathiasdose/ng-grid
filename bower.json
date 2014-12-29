@@ -1,6 +1,6 @@
 {
   "name": "angular-ui-grid",
-  "version": "3.0.0-rc.16",
+  "version": "3.0.0-RC.18",
   "homepage": "http://ui-grid.info",
   "repository": {
     "type": "git",
@@ -27,6 +27,6 @@
     "jquery": "~1.8.0",
     "lodash": "~2.4.1",
     "pdfmake": "~0.1.8",
-    "csv-js": "*"
+    "csv-js": "https://github.com/c0bra/CSV-JS.git#~1.0.2"
   }
 }

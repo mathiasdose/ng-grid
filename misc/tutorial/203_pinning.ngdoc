@@ -4,17 +4,18 @@
 
 The pinning feature allows the user to pin a column to left or right. To enable, you must include the 'ui.grid.pinning' module and you must include the ui-grid-pinning directive on your grid element.
 
+It is also possible to disable pinning on column level. Note the 'id' column definition in the example below.
 
 @example
 <example module="app">
   <file name="app.js">
-    var app = angular.module('app', ['ui.grid', 'ui.grid.pinning']);
+    var app = angular.module('app', ['ngTouch', 'ui.grid', 'ui.grid.pinning']);
 
     app.controller('MainCtrl', ['$scope', '$http', '$log', function ($scope, $http, $log) {
       $scope.gridOptions = {};
 
       $scope.gridOptions.columnDefs = [
-        { name:'id', width:50 },
+        { name:'id', width:50, enablePinning:false },
         { name:'name', width:100, pinnedLeft:true },
         { name:'age', width:100, pinnedRight:true  },
         { name:'address.street', width:150  },

@@ -66,11 +66,9 @@ describe('ui.grid.exporter uiGridExporterService', function () {
       uiGridExporterService.defaultGridOptions(options);
       expect( options ).toEqual({
         exporterSuppressMenu: false,
-        exporterLinkTemplate: 'ui-grid/csvLink',
-        exporterHeaderTemplate: 'ui-grid/exporterHeader',
-        exporterLinkLabel: 'Download CSV',
         exporterMenuLabel: 'Export',
         exporterCsvColumnSeparator: ',',
+        exporterCsvFilename: 'download.csv',
         exporterPdfDefaultStyle : { fontSize : 11 },
         exporterPdfTableStyle : { margin : [ 0, 5, 0, 15 ] },
         exporterPdfTableHeaderStyle : { bold : true, fontSize : 12, color : 'black' },
@@ -80,6 +78,7 @@ describe('ui.grid.exporter uiGridExporterService', function () {
         exporterPdfPageSize : 'A4',
         exporterPdfMaxGridWidth : 720,
         exporterPdfCustomFormatter: jasmine.any(Function),
+        exporterHeaderFilterUseName: false,
         exporterMenuCsv: true,
         exporterMenuPdf: true,
         exporterFieldCallback: jasmine.any(Function),
@@ -91,11 +90,9 @@ describe('ui.grid.exporter uiGridExporterService', function () {
       var callback = function() {};
       options = {
         exporterSuppressMenu: true,
-        exporterLinkTemplate: 'myCsvLink',
-        exporterHeaderTemplate: 'myExporterHeader',
-        exporterLinkLabel: 'special download label',
         exporterMenuLabel: 'custom export button',
         exporterCsvColumnSeparator: ';',
+        exporterCsvFilename: 'myfile.csv',
         exporterPdfDefaultStyle : { fontSize : 12 },
         exporterPdfTableStyle : { margin : [ 15, 5, 15, 15 ] },
         exporterPdfTableHeaderStyle : { bold : false, fontSize : 12, color : 'green' },
@@ -105,6 +102,7 @@ describe('ui.grid.exporter uiGridExporterService', function () {
         exporterPdfPageSize : 'LETTER',
         exporterPdfMaxGridWidth : 670,
         exporterPdfCustomFormatter: callback,
+        exporterHeaderFilterUseName: true,
         exporterMenuCsv: false,
         exporterMenuPdf: false,
         exporterFieldCallback: callback,
@@ -113,11 +111,9 @@ describe('ui.grid.exporter uiGridExporterService', function () {
       uiGridExporterService.defaultGridOptions(options);
       expect( options ).toEqual({
         exporterSuppressMenu: true,
-        exporterLinkTemplate: 'myCsvLink',
-        exporterHeaderTemplate: 'myExporterHeader',
-        exporterLinkLabel: 'special download label',
         exporterMenuLabel: 'custom export button',
         exporterCsvColumnSeparator: ';',
+        exporterCsvFilename: 'myfile.csv',
         exporterPdfDefaultStyle : { fontSize : 12 },
         exporterPdfTableStyle : { margin : [ 15, 5, 15, 15 ] },
         exporterPdfTableHeaderStyle : { bold : false, fontSize : 12, color : 'green' },
@@ -127,6 +123,7 @@ describe('ui.grid.exporter uiGridExporterService', function () {
         exporterPdfPageSize : 'LETTER',
         exporterPdfMaxGridWidth : 670,
         exporterPdfCustomFormatter: callback,
+        exporterHeaderFilterUseName: true,
         exporterMenuCsv: false,
         exporterMenuPdf: false,
         exporterFieldCallback: callback,
@@ -182,6 +179,18 @@ describe('ui.grid.exporter uiGridExporterService', function () {
         {name: 'col4', displayName: 'mapped_Col4', width: 200, align: 'left'}
       ]);
     });
+
+    it('gets all headers using headerFilter, passing name not displayName', function() {
+      grid.options.exporterHeaderFilterUseName = true;
+      grid.options.exporterHeaderFilter = function( name ){ return "mapped_" + name; };
+
+      expect(uiGridExporterService.getColumnHeaders(grid, uiGridExporterConstants.ALL)).toEqual([
+        {name: 'col1', displayName: 'mapped_col1', width: 50, align: 'left'},
+        {name: 'col2', displayName: 'mapped_col2', width: '*', align: 'right'},
+        {name: 'col3', displayName: 'mapped_col3', width: 100, align: 'left'},
+        {name: 'col4', displayName: 'mapped_col4', width: 200, align: 'left'}
+      ]);
+    });
   });
 
 
@@ -209,6 +218,14 @@ describe('ui.grid.exporter uiGridExporterService', function () {
         [ {value: 'b_0'}, {value: 'c_0'}, {value: 'd_0'} ],
         [ {value: 'b_1'}, {value: 'c_1'}, {value: 'd_1'} ],
         [ {value: 'b_2'}, {value: 'c_2'}, {value: 'd_2'} ]
+      ]);
+    });
+
+    it('ignores disabled row', function() {
+      grid.rows[1].exporterEnableExporting = false;
+      expect(uiGridExporterService.getData(grid, uiGridExporterConstants.ALL, uiGridExporterConstants.ALL)).toEqual([
+        [ {value: 'a_0'}, {value: 'b_0'}, {value: 'c_0'}, {value: 'd_0'} ],
+        [ {value: 'a_2'}, {value: 'b_2'}, {value: 'c_2'}, {value: 'd_2'} ]
       ]);
     });
 
@@ -300,38 +317,6 @@ describe('ui.grid.exporter uiGridExporterService', function () {
       );
     });
   });
-  
-/*  
-  describe('renderCSVLink', function() {
-    var csvContent;
-    var elm;
-    beforeEach(function() {
-      csvContent = '"Col1","Col2","Col3","12345234"\n"a string","a string","A string","a string"\n"","45","A string",FALSE\n"2014-12-12T00:00:00.000Z",45,"A string",TRUE';
-
-      elm = angular.element('<div class="ui-grid-exporter-header"><button class="ui-grid-exporter-menu-button" ng-if="showButton" ng-click="showExportMenu()"></button><div class="ui-grid-exporter-menu" ui-grid-exporter-menu ui-grid-menu menu-items="menuItems"></div><span class="ui-grid-exporter-csv-link"></span></div><div ui-grid></dev>');
-      
-      $compile(elm)($scope);
-      $document[0].body.appendChild(elm[0]);
-
-      $scope.$digest();
-      
-      grid.exporter.headerElm = elm;
-    });
-
-    it('render a link with no extra options', function() {
-      uiGridExporterService.renderCSVLink( grid, csvContent );
-      
-    });
-
-    it('', function() {
-      
-    });
-
-    it('', function() {
-      
-    });
-  });
-*/
 
   describe( 'prepareAsPdf', function() {
     it( 'prepares standard grid using defaults', function() {
@@ -432,7 +417,6 @@ describe('ui.grid.exporter uiGridExporterService', function () {
         pageOrientation : 'portrait',
         pageSize: 'LETTER', 
         content : [
-          'My Header', 
           { 
             style : 'tableStyle', 
             table : { 
@@ -450,9 +434,10 @@ describe('ui.grid.exporter uiGridExporterService', function () {
                 [ {text: date.toISOString(), alignment: 'right'}, {text: '45', alignment: 'center'}, {text: 'A string', alignment: 'left'}, 'TRUE' ] 
               ] 
             } 
-          },
-          'My Footer'
-         ], 
+          }
+         ],
+        header : "My Header",
+        footer : "My Footer",  
         styles : { 
           tableStyle : { 
             margin : [ 30, 30, 30, 30 ] 

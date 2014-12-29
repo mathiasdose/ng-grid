@@ -44,13 +44,17 @@ describe('ui.grid.autoResizeGrid', function () {
       var w = $(viewportElm).width();
       var h = $(viewportElm).height();
 
-      $(gridElm).width(600);
+      runs(function () {
+        $(gridElm).width(600);
+      });
 
-      $timeout.flush();
+      waits(300);
 
-      var newW = $(viewportElm).width();
+      runs(function () {
+        var newW = $(viewportElm).width();
 
-      expect(newW).toBeGreaterThan(w);
+        expect(newW).toBeGreaterThan(w);
+      });
     }));
   });
 
@@ -75,13 +79,17 @@ describe('ui.grid.autoResizeGrid', function () {
       var w = $(viewportElm).width();
       var h = $(viewportElm).height();
 
-      $(gridContainerElm).width(500);
+      runs(function () {
+        $(gridContainerElm).width(500);
+      });
 
-      $timeout.flush();
+      waits(300);
 
-      var newW = $(viewportElm).width();
+      runs(function () {
+        var newW = $(viewportElm).width();
 
-      expect(newW).toBeGreaterThan(w);
+        expect(newW).toBeGreaterThan(w);
+      });
     }));
   });
 
